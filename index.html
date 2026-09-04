@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guitar & Music Club</title>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; }
+        body { background-color: #121214; color: #e1e1e6; padding: 40px 20px; display: flex; justify-content: center; }
+        .container { max-width: 1000px; width: 100%; }
+        header { text-align: center; margin-bottom: 40px; }
+        header h1 { color: #00adb5; font-size: 2.5rem; margin-bottom: 10px; }
+        .section { background: #1a1a1e; padding: 30px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #29292e; }
+        h2 { color: #fff; margin-bottom: 20px; font-size: 1.5rem; border-bottom: 2px solid #00adb5; padding-bottom: 8px; inline-size: max-content;}
+        .flex-group { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+        label { font-size: 0.9rem; color: #a8a8b3; }
+        select, input, textarea { background: #202024; border: 1px solid #29292e; color: #fff; padding: 12px; border-radius: 6px; font-size: 1rem; }
+        select:focus, input:focus, textarea:focus { border-color: #00adb5; outline: none; }
+        button { background: #00adb5; color: #fff; border: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #008c95; }
+        .chord-box { display: inline-block; background: #29292e; color: #00adb5; font-size: 2rem; font-weight: 700; padding: 15px 25px; margin: 10px; border-radius: 8px; border: 2px solid #00adb5; box-shadow: 0 4px 10px rgba(0,173,181,0.2); }
+        #chordsResult { text-align: center; min-height: 80px; margin-top: 20px; }
+        .song-card { background: #202024; padding: 20px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #00adb5; }
+        .song-card h3 { color: #fff; margin-bottom: 5px; }
+        .song-card h4 { color: #a8a8b3; font-weight: 400; margin-bottom: 15px; }
+        pre { background: #121214; padding: 15px; border-radius: 6px; overflow-x: auto; font-family: monospace; font-size: 1.1rem; color: #ffb64d; white-space: pre-wrap; }
+        .w-100 { width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎸 Guitar & Music Club</h1>
+            <p>интерактивный тренажер и каталог табулатур</p>
+        </header>
+
+        <div class="section">
+            <h2>Генератор аккордов для тренировки</h2>
+            <div class="flex-group">
+                <div>
+                    <label>Тональность:</label><br>
+                    <select id="chordKey">
+                        <option value="">Любая</option>
+                        <option value="Am">Am (ля-минор)</option>
+                        <option value="C">C (до-мажор)</option>
+                        <option value="G">G (соль-мажор)</option>
+                        <option value="Em">Em (ми-минор)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Сложность:</label><br>
+                    <select id="chordLevel">
+                        <option value="easy">Без баррэ (Easy)</option>
+                        <option value="hard">С баррэ (Hard)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Количество:</label><br>
+                    <input type="number" id="chordLength" value="4" min="2" max="10" style="width: 80px;">
+                </div>
+                <div style="padding-top: 20px;">
+                    <button onclick="generateChords()">Сгенерировать</button>
+                </div>
+            </div>
+            <div id="chordsResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>Каталог гитарных табул</h2>
+            <div class="flex-group">
+                <input type="text" id="searchInput" class="w-100" placeholder="Введите название песни или имя исполнителя для поиска..." oninput="searchSongs()">
+            </div>
+            <div id="songsResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>Добавить песню в каталог</h2>
+            <div class="flex-group">
+                <input type="text" id="addArtist" placeholder="Исполнитель (например, Кино)" style="flex: 1;">
+                <input type="text" id="addTitle" placeholder="Название песни (например, Звезда по имени Солнце)" style="flex: 1;">
+            </div>
+            <textarea id="addContent" class="w-100" rows="6" placeholder="Вставьте сюда текст песни и аккорды/табулатуру..."></textarea>
+            <br><br>
+            <button onclick="addSong()">Сохранить песню</button>
+        </div>
+    </div>
+
+    <script>
+        function generateChords() {
+            const key = document.getElementById('chordKey').value;
+            const level = document.getElementById('chordLevel').value;
+            const length = document.getElementById('chordLength').value;
+
+            fetch('/api/chords/random?key=' + key + '&level=' + level + '&length=' + length)
+                .then(res => res.json())
+                .then(data => {
+                    const box = document.getElementById('chordsResult');
+                    box.innerHTML = '';
+                    data.sequence.forEach(chord => {
+                        box.innerHTML += '<div class="chord-box">' + chord + '</div>';
+                    });
+                });
+        }
+
+        function searchSongs() {
+            const q = document.getElementById('searchInput').value;
+            fetch('/api/tabs?search=' + encodeURIComponent(q))
+                .then(res => res.json())
+                .then(data => {
+                    const box = document.getElementById('songsResult');
+                    box.innerHTML = '';
+                    if(!data || data.length === 0) {
+                        box.innerHTML = '<p style="color: #a8a8b3;">Ничего не найдено</p>';
+                        return;
+                    }
+                    data.forEach(song => {
+                        box.innerHTML += `
+                            <div class="song-card">
+                                <h3>${song.title}</h3>
+                                <h4>${song.artist_name}</h4>
+                                <pre>${song.content}</pre>
+                            </div>
+                        `;
+                    });
+                });
+        }
+
+        function addSong() {
+            const artist = document.getElementById('addArtist').value;
+            const title = document.getElementById('addTitle').value;
+            const content = document.getElementById('addContent').value;
+
+            fetch('/api/tabs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ artist_name: artist, title: title, content: content })
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert('Песня успешно добавлена!');
+                    document.getElementById('addArtist').value = '';
+                    document.getElementById('addTitle').value = '';
+                    document.getElementById('addContent').value = '';
+                    searchSongs();
+                } else {
+                    return res.json().then(err => alert('Ошибка: ' + err.error));
+                }
+            });
+        }
+
+        searchSongs();
+    </script>
+</body>
+</html>
