@@ -6,6 +6,65 @@
     <title>Guitar & Music Club</title>
     <link href="https://googleapis.com" rel="stylesheet">
     <style>
+        /* Стили для караоке-текста с аккордами над строкой */
+.lyrics-container {
+    background: #121214;
+    padding: 25px;
+    border-radius: 8px;
+    line-height: 2.8; /* Большой интервал, чтобы аккорды не налезали на текст */
+    font-size: 1.1rem;
+    color: #e1e1e6;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+/* Обертка для аккорда, чтобы он позиционировался над словом */
+.chord-wrapper {
+    position: relative;
+    display: inline-block;
+    color: #ffb64d;
+    font-weight: 700;
+    margin-right: 2px;
+}
+
+.chord-wrapper::before {
+    content: attr(data-chord);
+    position: absolute;
+    bottom: 1.4rem; /* Поднимаем аккорд строго НАД строчкой текста */
+    left: 0;
+    background: rgba(0, 173, 181, 0.15);
+    color: #00adb5;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    line-height: 1;
+    border: 1px solid rgba(0, 173, 181, 0.3);
+}
+
+/* Блок аппликатур (картинок грифа) в самом низу */
+.chords-diagrams-container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #29292e;
+}
+
+.diagram-card {
+    background: #202024;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #29292e;
+}
+
+.diagram-card h5 {
+    color: #00adb5;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; }
         body { background-color: #121214; color: #e1e1e6; padding: 40px 20px; display: flex; justify-content: center; }
         .container { max-width: 1000px; width: 100%; }
@@ -32,9 +91,10 @@
     <div class="container">
         <header>
             <h1>🎸 Guitar & Music Club</h1>
-            <p>интерактивный тренажер и каталог табулатур</p>
+            <p>Твой интерактивный тренажер и каталог табулатур</p>
         </header>
 
+        <!-- 1. ГЕНЕРАТОР АККОРДОВ -->
         <div class="section">
             <h2>Генератор аккордов для тренировки</h2>
             <div class="flex-group">
@@ -66,6 +126,40 @@
             <div id="chordsResult"></div>
         </div>
 
+        <!-- 2. ГЕНЕРАТОР БОЯ -->
+        <div class="section">
+            <h2>Генератор случайного боя</h2>
+            <div class="flex-group">
+                <div>
+                    <label>Тип рисунка:</label><br>
+                    <select id="strumType">
+                        <option value="all">Любой бой</option>
+                        <option value="44">Размер 4/4 (Эстрадный, Четверка)</option>
+                        <option value="34">Размер 3/4 (Вальсовый)</option>
+                    </select>
+                </div>
+                <div style="padding-top: 20px;">
+                    <button onclick="generateStrum()">Сгенерировать бой</button>
+                </div>
+            </div>
+            <div id="strumResult" style="text-align: center; font-size: 1.5rem; font-weight: 600; color: #ffb64d; margin-top: 15px; letter-spacing: 3px;"></div>
+        </div>
+
+        <!-- 3. ВСТРОЕННЫЙ МЕТРОНОМ -->
+        <div class="section">
+            <h2>Встроенный метроном</h2>
+            <div class="flex-group">
+                <div>
+                    <label>Темп (BPM):</label><br>
+                    <input type="number" id="bpmInput" value="120" min="40" max="250" style="width: 100px;">
+                </div>
+                <div style="padding-top: 20px;">
+                    <button id="metronomeBtn" onclick="toggleMetronome()">Старт</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. КАТАЛОГ И ПОИСК ТАБУЛАТУР -->
         <div class="section">
             <h2>Каталог гитарных табул</h2>
             <div class="flex-group">
@@ -74,82 +168,28 @@
             <div id="songsResult"></div>
         </div>
 
+        <!-- 5. ЗАГРУЗКА АУДИО И AI РАСПОЗНАВАНИЕ -->
         <div class="section">
-            <h2>Добавить песню в каталог</h2>
+            <h2>AI Распознавание аккордов из аудиофайла (Magic Chords Mode)</h2>
             <div class="flex-group">
-                <input type="text" id="addArtist" placeholder="Исполнитель (например, Кино)" style="flex: 1;">
-                <input type="text" id="addTitle" placeholder="Название песни (например, Звезда по имени Солнце)" style="flex: 1;">
+                <input type="text" id="audioArtist" placeholder="Исполнитель (например, Linkin Park)" style="flex: 1;">
+                <input type="text" id="audioTitle" placeholder="Название трека (например, Numb)" style="flex: 1;">
             </div>
-            <textarea id="addContent" class="w-100" rows="6" placeholder="Вставьте сюда текст песни и аккорды/табулатуру..."></textarea>
+            
+            <div style="margin-bottom: 20px;">
+                <label>Выберите трек (.mp3, .wav, .flac):</label><br><br>
+                <input type="file" id="audioFile" accept=".mp3,.wav,.flac,.m4a">
+            </div>
+
+            <button onclick="uploadAndRecognizeAudio()" style="background: #ffb64d; color: #121214; font-weight: bold;">
+                🎙️ Загрузить аудио файл и извлечь аккорды
+            </button>
             <br><br>
-            <button onclick="addSong()">Сохранить песню</button>
+            <div id="aiStatus" style="color: #00adb5; font-weight: 600;"></div>
         </div>
     </div>
 
-    <script>
-        function generateChords() {
-            const key = document.getElementById('chordKey').value;
-            const level = document.getElementById('chordLevel').value;
-            const length = document.getElementById('chordLength').value;
-
-            fetch('/api/chords/random?key=' + key + '&level=' + level + '&length=' + length)
-                .then(res => res.json())
-                .then(data => {
-                    const box = document.getElementById('chordsResult');
-                    box.innerHTML = '';
-                    data.sequence.forEach(chord => {
-                        box.innerHTML += '<div class="chord-box">' + chord + '</div>';
-                    });
-                });
-        }
-
-        function searchSongs() {
-            const q = document.getElementById('searchInput').value;
-            fetch('/api/tabs?search=' + encodeURIComponent(q))
-                .then(res => res.json())
-                .then(data => {
-                    const box = document.getElementById('songsResult');
-                    box.innerHTML = '';
-                    if(!data || data.length === 0) {
-                        box.innerHTML = '<p style="color: #a8a8b3;">Ничего не найдено</p>';
-                        return;
-                    }
-                    data.forEach(song => {
-                        box.innerHTML += `
-                            <div class="song-card">
-                                <h3>${song.title}</h3>
-                                <h4>${song.artist_name}</h4>
-                                <pre>${song.content}</pre>
-                            </div>
-                        `;
-                    });
-                });
-        }
-
-        function addSong() {
-            const artist = document.getElementById('addArtist').value;
-            const title = document.getElementById('addTitle').value;
-            const content = document.getElementById('addContent').value;
-
-            fetch('/api/tabs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ artist_name: artist, title: title, content: content })
-            })
-            .then(res => {
-                if(res.ok) {
-                    alert('Песня успешно добавлена!');
-                    document.getElementById('addArtist').value = '';
-                    document.getElementById('addTitle').value = '';
-                    document.getElementById('addContent').value = '';
-                    searchSongs();
-                } else {
-                    return res.json().then(err => alert('Ошибка: ' + err.error));
-                }
-            });
-        }
-
-        searchSongs();
-    </script>
+    <!-- Подключаем внешний JavaScript файл логики -->
+    <script src="/static/app.js"></script>
 </body>
 </html>
