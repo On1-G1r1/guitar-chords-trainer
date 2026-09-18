@@ -1,41 +1,122 @@
-// 1. Генерация случайных аккордов
-function generateChords() {
-    const key = document.getElementById('chordKey').value;
-    const level = document.getElementById('chordLevel').value;
-    const length = document.getElementById('chordLength').value;
+// Библиотека аппликатур (6 струна слева -> 1 струна справа)
+const chordLibrarySVG = {
+    "Am": "x 0 2 2 1 0", "C":  "x 3 2 0 1 0", "Em": "0 2 2 0 0 0", "G":  "3 2 0 0 0 3",
+    "Dm": "x x 0 2 3 1", "F":  "1 3 3 2 1 1", "D":  "x x 0 2 3 2", "E":  "0 2 2 1 0 0",
+    "Fm": "1 3 3 1 1 1", "B":  "x 2 4 4 4 2", "Bm": "x 2 4 4 3 2", "C#m": "x 4 6 6 5 4",
+    "G#m": "4 6 6 4 4 4", "D#m": "x 6 8 8 7 6", "F#": "2 4 4 3 2 2"
+};
 
-    fetch('/api/chords/random?key=' + key + '&level=' + level + '&length=' + length)
-        .then(res => res.json())
-        .then(data => {
-            const box = document.getElementById('chordsResult');
-            box.innerHTML = '';
-            data.sequence.forEach(chord => {
-                box.innerHTML += '<div class="chord-box">' + chord + '</div>';
-            });
-        });
-}
+const chromaticScale = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-// 2. Генератор ритмического рисунка (боя)
+const arpeggioPatterns = [
+    "🎸 Простая шестерка: Бас -> 3 -> 2 -> 1 -> 2 -> 3",
+    "🎸 Восьмерка классическая: Бас -> 3 -> 2 -> 3 -> 1 -> 3 -> 2 -> 3",
+    "🎸 Вальсовый перебор: Бас -> (3+2+1) -> (3+2+1)",
+    "🎸 Четверка (Блатной): Бас -> 3 -> (2+1) -> 3"
+];
+
 const strumPatterns = {
     "44": [
         "⬇️ ⬇️ ⬆️ ⬆️ ⬇️ ⬆️ (Шестерка)",
         "⬇️ ❌ ⬆️ ⬆️ ❌ ⬆️ (Шестерка с глушением)",
-        "⬇️ ⬇️ ⬆️ ⬇️ ⬆️ (Пятерка)",
-        "⬇️ ❌ ⬆️ ⬇️ ❌ ⬆️ (Четверка)",
-        "⬇️ ⬇️ ⬇️ ⬇️ (Простые четверти)"
+        "⬇️ ❌ ⬆️ ⬇️ ❌ ⬆️ (Четверка)"
     ],
     "34": [
         "⬇️ ⬆️ ⬆️ (Вальсовый простой)",
-        "⬇️ ⬇️ ⬆️ ⬇️ ⬆️ (Испанский вальс)",
         "⬇️ ❌ ❌ (Вальс с глушением)"
     ]
 };
 
+let generatedChordsCache = []; 
+let currentActiveChordIndex = 0;
+let audioCtx = null;
+let isPlaying = false;
+let practiceInterval = null;
+let beatCount = 0;
+let currentBpm = 120;
+
+// При запуске страницы подгружаем историю из базы данных
+document.addEventListener("DOMContentLoaded", () => {
+    loadSequenceHistory();
+});
+
+// 1. Генерация аккордов по законам гармонии и настроениям
+function generateChords() {
+    const key = document.getElementById('chordKey').value;
+    const mood = document.getElementById('chordMood').value;
+    const level = document.getElementById('chordLevel').value;
+    const length = document.getElementById('chordLength').value;
+
+    fetch(`/api/chords/random?key=${key}&mood=${mood}&level=${level}&length=${length}`)
+        .then(res => res.json())
+        .then(data => {
+            generatedChordsCache = data.sequence;
+            renderChordsResult(generatedChordsCache);
+        })
+        .catch(err => console.error("Ошибка генерации:", err));
+}
+
+function renderChordsResult(chordsArray) {
+    const box = document.getElementById('chordsResult');
+    box.innerHTML = '';
+    
+    chordsArray.forEach((chord, idx) => {
+        const rawScheme = chordLibrarySVG[chord] || "0 2 2 0 0 0";
+        const shiftedScheme = calculateCapoScheme(rawScheme);
+
+        box.innerHTML += `
+            <div class="chord-box" id="chord-item-${idx}">
+                <div style="font-size: 1.8rem; font-weight:700;">${chord}</div>
+                <div style="font-family: monospace; font-size: 0.85rem; color: #a8a8b3; margin-top: 5px; letter-spacing: 1px;">
+                    ${shiftedScheme}
+                </div>
+            </div>
+        `;
+    });
+}
+
+// 2. Транспонирование всей цепочки (+1 / -1 полутон)
+function transposeChords(semitones) {
+    if (generatedChordsCache.length === 0) return;
+
+    generatedChordsCache = generatedChordsCache.map(chordName => {
+        const isMinor = chordName.endsWith("m") && !chordName.endsWith("m7");
+        const cleanName = isMinor ? chordName.slice(0, -1) : chordName;
+
+        let idx = chromaticScale.indexOf(cleanName);
+        if (idx === -1) return chordName;
+
+        idx = (idx + semitones + 12) % 12;
+        return chromaticScale[idx] + (isMinor ? "m" : "");
+    });
+
+    renderChordsResult(generatedChordsCache);
+}
+
+// 3. Вычисление схемы с учетом каподастра
+function calculateCapoScheme(rawScheme) {
+    const capo = parseInt(document.getElementById('capoFret').value) || 0;
+    if (capo === 0) return rawScheme;
+
+    return rawScheme.split(' ').map(fret => {
+        if (fret === 'x' || fret === '0' || fret === '') return fret;
+        let newFret = parseInt(fret) - capo;
+        return newFret < 0 ? 0 : newFret;
+    }).join(' ');
+}
+
+function applyCapoShift() {
+    if (generatedChordsCache.length > 0) renderChordsResult(generatedChordsCache);
+}
+
+// 4. Генератор ритмических рисунков и переборов
 function generateStrum() {
     const type = document.getElementById('strumType').value;
     let pool = [];
 
-    if (type === "all") {
+    if (type === "arpeggio") {
+        pool = arpeggioPatterns;
+    } else if (type === "all") {
         pool = [...strumPatterns["44"], ...strumPatterns["34"]];
     } else {
         pool = strumPatterns[type];
@@ -45,238 +126,164 @@ function generateStrum() {
     document.getElementById('strumResult').innerText = pool[randomIndex];
 }
 
-// 3. Аудио-метроном (Web Audio API)
-let audioCtx = null;
-let isPlaying = false;
-let metronomeInterval = null;
+// 5. Умный тренажер практики (Таймер / Разгон)
+function togglePracticeFields() {
+    const mode = document.getElementById('practiceMode').value;
+    document.getElementById('bpmField').style.display = mode === 'metronome' ? 'block' : 'none';
+    document.getElementById('secondsField').style.display = mode === 'timer' ? 'block' : 'none';
+}
 
-function toggleMetronome() {
+function togglePracticeRoutine() {
     const btn = document.getElementById('metronomeBtn');
-    
+    const mode = document.getElementById('practiceMode').value;
+
     if (isPlaying) {
-        clearInterval(metronomeInterval);
+        clearTimeout(practiceInterval);
         isPlaying = false;
-        btn.innerText = 'Старт';
+        btn.innerText = 'Старт тренировки';
         btn.style.background = '#00adb5';
+        document.getElementById('beatProgressBar').style.width = '0%';
         return;
-    }
-
-    const bpm = parseInt(document.getElementById('bpmInput').value) || 120;
-    const intervalMs = (60 / bpm) * 1000;
-
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
 
     isPlaying = true;
     btn.innerText = 'Стоп';
     btn.style.background = '#ff4d4d';
+    beatCount = 0;
+    currentActiveChordIndex = 0;
+    currentBpm = parseInt(document.getElementById('bpmInput').value) || 120;
 
-    playClick();
-    metronomeInterval = setInterval(playClick, intervalMs);
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    if (mode === 'metronome') {
+        runMetronomeEngine();
+    } else {
+        runTimerEngine();
+    }
 }
 
-function playClick() {
-    if (!audioCtx) return;
+function runMetronomeEngine() {
+    const tickTime = () => {
+        if (!isPlaying) return;
+        
+        const intervalMs = (60 / currentBpm) * 1000;
+        const isStrongBeat = (beatCount % 4 === 0);
+        
+        playClickSound(isStrongBeat ? 1200 : 700); 
+        flashVisualProgressBar(intervalMs);
+
+        if (isStrongBeat && generatedChordsCache.length > 0) {
+            highlightActiveTrainingChord();
+            
+			// Разгон: каждые 4 такта (16 ударов) увеличиваем темп на +5 BPM
+            if (beatCount > 0 && beatCount % 16 === 0 && document.getElementById('autoBpmCheck').checked) {
+                currentBpm = Math.min(currentBpm + 5, 250);
+                document.getElementById('bpmInput').value = currentBpm;
+            }
+        }
+
+        beatCount++;
+        practiceInterval = setTimeout(tickTime, intervalMs);
+    };
+    tickTime();
+}
+
+function runTimerEngine() {
+    const seconds = parseInt(document.getElementById('secondsInput').value) || 4;
+    const intervalMs = seconds * 1000;
+
+    const tickTimer = () => {
+        if (!isPlaying) return;
+        playClickSound(900);
+        flashVisualProgressBar(intervalMs);
+        highlightActiveTrainingChord();
+        practiceInterval = setTimeout(tickTimer, intervalMs);
+    };
     
+    highlightActiveTrainingChord();
+    flashVisualProgressBar(intervalMs);
+    practiceInterval = setTimeout(tickTimer, intervalMs);
+}
+
+function flashVisualProgressBar(ms) {
+    const bar = document.getElementById('beatProgressBar');
+    bar.style.transition = 'none';
+    bar.style.width = '0%';
+    setTimeout(() => {
+        bar.style.transition = `width ${ms / 1000}s linear`;
+        bar.style.width = '100%';
+    }, 10);
+}
+
+function playClickSound(freq) {
+    if (!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-
     osc.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.04);
+}
+
+function highlightActiveTrainingChord() {
+    if (generatedChordsCache.length === 0) return;
     
-    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + 0.05);
+    document.querySelectorAll('.chord-box').forEach(el => {
+        el.style.borderColor = '#00adb5';
+        el.style.transform = 'none';
+    });
+    
+    const activeBox = document.getElementById(`chord-item-${currentActiveChordIndex}`);
+    if (activeBox) {
+        activeBox.style.borderColor = '#ffb64d'; 
+        activeBox.style.transform = 'scale(1.05)';
+    }
+    
+    currentActiveChordIndex = (currentActiveChordIndex + 1) % generatedChordsCache.length;
 }
 
-// 4. Поиск сохраненных треков в каталоге
-function searchSongs() {
-    const q = document.getElementById('searchInput').value;
-    fetch('/api/tabs?search=' + encodeURIComponent(q))
-        .then(res => res.json())
-        .then(data => {
-            const box = document.getElementById('songsResult');
-            box.innerHTML = '';
-            if(!data || data.length === 0) {
-                box.innerHTML = '<p style="color: #a8a8b3;">Ничего не найдено</p>';
-                return;
-            }
-            data.forEach(song => {
-                let innerContent = '';
-                try {
-                    // Если внутри песни лежит JSON-анализ
-                    const trackMeta = JSON.parse(song.content);
-                    innerContent = `<p style="color: #00adb5; font-weight: bold;">[AI Разбор аудиофайла]</p><br>`;
-                    trackMeta.chords_vector.forEach(item => {
-                        innerContent += `<b>[${item.timeStr}]</b> Акаорды: ${item.chord1} — ${item.chord2} (Пик: ${item.peak})<br>`;
-                    });
-                } catch(e) {
-                    // Если это старая текстовая песня
-                    innerContent = `<pre>${song.content}</pre>`;
-                }
-
-                box.innerHTML += `
-                    <div class="song-card" style="margin-bottom: 15px;">
-                        <h3>${song.title}</h3>
-                        <h4>${song.artist_name}</h4>
-                        <div style="margin-top: 10px; background: #121214; padding: 15px; border-radius: 6px; color: #ffb64d; line-height: 1.6;">
-                            ${innerContent}
-                        </div>
-                    </div>
-                `;
-            });
-        });
-}
-
-
-// 5. Загрузка аудиофайла и AI распознавание аккордов
-// Карта популярнейших аппликатур (0 - открытая струна, х - глушить, цифра - номер лада от 1 до 6 струны)
-const chordLibrarySVG = {
-    "Am": "🏽 x 0 2 2 1 0",
-    "C":  "🏽 x 3 2 0 1 0",
-    "Em": "🏽 0 2 2 0 0 0",
-    "G":  "🏽 3 2 0 0 0 3",
-    "Dm": "🏽 x x 0 2 3 1",
-    "F":  "🏽 1 3 3 2 1 1 (Баррэ)",
-    "D":  "🏽 x x 0 2 3 2",
-    "E":  "🏽 0 2 2 1 0 0"
-};
-
-function uploadAndRecognizeAudio() {
-    const artist = document.getElementById('audioArtist').value;
-    const title = document.getElementById('audioTitle').value;
-    const fileInput = document.getElementById('audioFile');
-
-    if (!artist || !title || fileInput.files.length === 0) {
-        alert('Пожалуйста, заполните поля и выберите аудиофайл!');
+// 6. Сохранение цепочки и работа с базой данных
+function saveCurrentSequence() {
+    if (generatedChordsCache.length === 0) {
+        alert("Сначала сгенерируйте аккорды!");
         return;
     }
-
-    const statusBox = document.getElementById('aiStatus');
-    statusBox.innerText = '⏳ Парсим оригинальный текст и строим интерактивную сетку аккордов...';
-
-    const file = fileInput.files[0];
-    const audioUrl = URL.createObjectURL(file);
-    const formData = new FormData();
-    formData.append('artist_name', artist);
-    formData.append('title', title);
-    formData.append('audio_file', file);
-    formData.append('duration_sec', 180); // базовый тайминг
-
-    fetch('/api/tabs/upload-audio', {
+    fetch('/api/chords/save', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chords: generatedChordsCache })
     })
     .then(res => res.json())
-    .then(data => {
-        if (data.error) {
-            alert('Ошибка: ' + data.error);
-            statusBox.innerText = '';
-        } else {
-            statusBox.innerText = '✅ Текст песни и аппликатуры успешно загружены!';
-            
-            const trackMeta = JSON.parse(data.content);
-            
-            // Превращаем обычные текстовые аккорды [Am] в парящие HTML-плашки
-            let formattedLyrics = trackMeta.text_content
-                .replace(/\[([A-G][b#]?(m|maj|min|strings)?\d*)\]/g, '<span class="chord-wrapper" data-chord="$1"></span>');
-
-            let htmlCard = `
-                <div class="song-card">
-                    <h3>${data.title}</h3>
-                    <h4>${data.artist_name}</h4>
-                    
-                    <audio id="mainAudioComponent" controls style="width: 100%; margin: 15px 0;"></audio>
-                    
-                    <!-- Разбор песни с парящими аккордами над строками -->
-                    <div class="lyrics-container">
-                        ${formattedLyrics}
-                    </div>
-
-                    <!-- Раздел аппликатур (схем ладов) в самом низу песни -->
-                    <h4 style="margin-top: 30px; color: #fff; font-size: 1.2rem;">📌 Аппликатуры аккордов песни:</h4>
-                    <div class="chords-diagrams-container">
-            `;
-
-            // Автоматически генерируем карточки ладов для каждого уникального аккорда из песни
-            if (trackMeta.used_chords && trackMeta.used_chords.length > 0) {
-                trackMeta.used_chords.forEach(chord => {
-                    const scheme = chordLibrarySVG[chord] || "Схема подбирается";
-                    htmlCard += `
-                        <div class="diagram-card">
-                            <h5>${chord}</h5>
-                            <div style="font-family: monospace; font-size: 1.1rem; color: #ffb64d; background: #121214; padding: 8px; border-radius: 4px;">
-                                ${scheme}
-                            </div>
-                        </div>
-                    `;
-                });
-            } else {
-                // Если парсер вернул чистый текст, выводим базовые схемы Far From Any Road
-                ["Am", "Em", "Dm", "C", "G", "F"].forEach(chord => {
-                    htmlCard += `
-                        <div class="diagram-card">
-                            <h5>${chord}</h5>
-                            <div style="font-family: monospace; font-size: 1.1rem; color: #ffb64d; background: #121214; padding: 8px; border-radius: 4px;">
-                                ${chordLibrarySVG[chord] || "0 2 2 0 0 0"}
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            htmlCard += `</div></div>`;
-            document.getElementById('songsResult').innerHTML = htmlCard;
-
-            const audioComponent = document.getElementById('mainAudioComponent');
-            audioComponent.src = audioUrl;
-
-            document.getElementById('audioArtist').value = '';
-            document.getElementById('audioTitle').value = '';
-            fileInput.value = '';
-        }
+    .then(() => {
+        loadSequenceHistory();
     })
-    .catch(err => {
-        alert('Не удалось выполнить обработку.');
-        statusBox.innerText = '';
-    });
+    .catch(err => console.error("Ошибка сохранения:", err));
 }
 
-
-
-// ФУНКЦИЯ ПОДДСВЕТКИ АККОРДОВ В РЕАЛЬНОМ ВРЕМЕНИ
-function syncChordsWithAudio() {
-    const audio = document.getElementById('mainAudioComponent');
-    if (!audio || chordsDataGlobal.length === 0) return;
-
-    const currentSeconds = Math.floor(audio.currentTime);
-
-    // Находим, какой 5-секундный интервал звучит прямо сейчас
-    let activeSeconds = 0;
-    chordsDataGlobal.forEach(item => {
-        if (currentSeconds >= item.seconds) {
-            activeSeconds = item.seconds;
-        }
+function loadSequenceHistory() {
+    const box = document.getElementById('historyResult');
+    fetch('/api/chords/history')
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.length === 0) {
+                box.innerHTML = "История тренировок пока пуста.";
+                return;
+            }
+            box.innerHTML = '';
+            data.forEach(item => {
+                box.innerHTML += `
+                    <div style="background: #202024; padding: 10px 15px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #ffb64d; display:flex; justify-content: space-between; align-items:center;">
+                        <span style="font-weight:600; color:#fff; letter-spacing:1px;">${item.chords.join(' — ')}</span>
+                        <button onclick='generatedChordsCache=${JSON.stringify(item.chords)}; renderChordsResult(generatedChordsCache);' style="padding: 4px 10px; font-size:0.8rem; background:#29292e; color:#00adb5; border:1px solid #00adb5;">Загрузить</button>
+                    </div>
+                `;
+});
+})
+.catch(() => {
+    box.innerHTML = "Не удалось загрузить историю база данных отключена или настроена";
     });
-
-    // Сбрасываем подсветку со всех карточек и подсвечиваем текущую
-    document.querySelectorAll('.chord-timeline-item').forEach(el => {
-        el.style.background = '#121214';
-        el.style.borderColor = '#29292e';
-        el.style.transform = 'scale(1)';
-    });
-
-    const activeCard = document.getElementById(`chord-block-${activeSeconds}`);
-    if (activeCard) {
-        activeCard.style.background = 'rgba(0, 173, 181, 0.15)';
-        activeCard.style.borderColor = '#00adb5';
-        activeCard.style.transform = 'scale(1.03)';
-    }
 }
-

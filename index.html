@@ -3,109 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guitar & Music Club</title>
-    <link href="https://googleapis.com" rel="stylesheet">
-    <style>
-        /* Стили для караоке-текста с аккордами над строкой */
-.lyrics-container {
-    background: #121214;
-    padding: 25px;
-    border-radius: 8px;
-    line-height: 2.8; /* Большой интервал, чтобы аккорды не налезали на текст */
-    font-size: 1.1rem;
-    color: #e1e1e6;
-    overflow-x: auto;
-    white-space: pre-wrap;
-}
-
-/* Обертка для аккорда, чтобы он позиционировался над словом */
-.chord-wrapper {
-    position: relative;
-    display: inline-block;
-    color: #ffb64d;
-    font-weight: 700;
-    margin-right: 2px;
-}
-
-.chord-wrapper::before {
-    content: attr(data-chord);
-    position: absolute;
-    bottom: 1.4rem; /* Поднимаем аккорд строго НАД строчкой текста */
-    left: 0;
-    background: rgba(0, 173, 181, 0.15);
-    color: #00adb5;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    line-height: 1;
-    border: 1px solid rgba(0, 173, 181, 0.3);
-}
-
-/* Блок аппликатур (картинок грифа) в самом низу */
-.chords-diagrams-container {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #29292e;
-}
-
-.diagram-card {
-    background: #202024;
-    padding: 15px;
-    border-radius: 8px;
-    text-align: center;
-    border: 1px solid #29292e;
-}
-
-.diagram-card h5 {
-    color: #00adb5;
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-}
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; }
-        body { background-color: #121214; color: #e1e1e6; padding: 40px 20px; display: flex; justify-content: center; }
-        .container { max-width: 1000px; width: 100%; }
-        header { text-align: center; margin-bottom: 40px; }
-        header h1 { color: #00adb5; font-size: 2.5rem; margin-bottom: 10px; }
-        .section { background: #1a1a1e; padding: 30px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #29292e; }
-        h2 { color: #fff; margin-bottom: 20px; font-size: 1.5rem; border-bottom: 2px solid #00adb5; padding-bottom: 8px; inline-size: max-content;}
-        .flex-group { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
-        label { font-size: 0.9rem; color: #a8a8b3; }
-        select, input, textarea { background: #202024; border: 1px solid #29292e; color: #fff; padding: 12px; border-radius: 6px; font-size: 1rem; }
-        select:focus, input:focus, textarea:focus { border-color: #00adb5; outline: none; }
-        button { background: #00adb5; color: #fff; border: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        button:hover { background: #008c95; }
-        .chord-box { display: inline-block; background: #29292e; color: #00adb5; font-size: 2rem; font-weight: 700; padding: 15px 25px; margin: 10px; border-radius: 8px; border: 2px solid #00adb5; box-shadow: 0 4px 10px rgba(0,173,181,0.2); }
-        #chordsResult { text-align: center; min-height: 80px; margin-top: 20px; }
-        .song-card { background: #202024; padding: 20px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #00adb5; }
-        .song-card h3 { color: #fff; margin-bottom: 5px; }
-        .song-card h4 { color: #a8a8b3; font-weight: 400; margin-bottom: 15px; }
-        pre { background: #121214; padding: 15px; border-radius: 6px; overflow-x: auto; font-family: monospace; font-size: 1.1rem; color: #ffb64d; white-space: pre-wrap; }
-        .w-100 { width: 100%; }
-    </style>
+    <title>Guitar Pro Practice Club</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎸 Guitar & Music Club</h1>
-            <p>Твой интерактивный тренажер и каталог табулатур</p>
+            <h1>🎸 Guitar Pro Practice Club</h1>
+            <p>Умный гармонический тренажер и интерактивный метроном для гитаристов</p>
         </header>
 
-        <!-- 1. ГЕНЕРАТОР АККОРДОВ -->
+        <!-- 1. УМНЫЙ ГЕНЕРАТОР АККОРДОВ -->
         <div class="section">
-            <h2>Генератор аккордов для тренировки</h2>
+            <h2>Генератор аккордов по законам гармонии</h2>
             <div class="flex-group">
                 <div>
                     <label>Тональность:</label><br>
                     <select id="chordKey">
-                        <option value="">Любая</option>
+                        <option value="">Любая (Случайно)</option>
                         <option value="Am">Am (ля-минор)</option>
                         <option value="C">C (до-мажор)</option>
                         <option value="G">G (соль-мажор)</option>
                         <option value="Em">Em (ми-минор)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Настроение:</label><br>
+                    <select id="chordMood">
+                        <option value="random">Хаос (Абсолютно случайно)</option>
+                        <option value="happy">😊 Веселое (Поп-цепочки)</option>
+                        <option value="sad">😢 Грустное (Лирика)</option>
+                        <option value="epic">⚔️ Эпическое / Героическое</option>
+                        <option value="jazz">🎷 Джазовое (ii-V-I)</option>
                     </select>
                 </div>
                 <div>
@@ -117,79 +46,95 @@
                 </div>
                 <div>
                     <label>Количество:</label><br>
-                    <input type="number" id="chordLength" value="4" min="2" max="10" style="width: 80px;">
+                    <input type="number" id="chordLength" value="4" min="2" max="10" style="width: 70px;">
                 </div>
                 <div style="padding-top: 20px;">
                     <button onclick="generateChords()">Сгенерировать</button>
                 </div>
             </div>
+
+            <!-- ИНСТРУМЕНТЫ ТРАНСПОНИРОВАНИЯ И КАПОДАСТРА -->
+            <div class="flex-group" style="margin-top: 15px; background: #202024; padding: 15px; border-radius: 6px;">
+                <div>
+                    <label>Транспонировать цепочку:</label><br>
+                    <button onclick="transposeChords(-1)" style="padding: 6px 14px; background: #ff4d4d; margin-top:5px;">-1 Полутон</button>
+                    <button onclick="transposeChords(1)" style="padding: 6px 14px; background: #ffb64d; color:#121214; margin-top:5px;">+1 Полутон</button>
+                </div>
+                <div style="margin-left: auto;">
+                    <label>Виртуальный каподастр (Лад):</label><br>
+                    <input type="number" id="capoFret" value="0" min="0" max="9" style="width: 70px; padding: 6px; margin-top:5px;" onchange="applyCapoShift()">
+                </div>
+            </div>
+
             <div id="chordsResult"></div>
+            
+            <div style="text-align: right; margin-top: 10px;">
+                <button onclick="saveCurrentSequence()" style="background: #29292e; color: #00adb5; border: 1px solid #00adb5; padding: 6px 14px; font-size: 0.85rem;">⭐ Сохранить эту цепочку</button>
+            </div>
         </div>
 
-        <!-- 2. ГЕНЕРАТОР БОЯ -->
+        <!-- 2. ГЕНЕРАТОР БОЯ И ПЕРЕБОРОВ -->
         <div class="section">
-            <h2>Генератор случайного боя</h2>
+            <h2>Генератор аккомпанемента</h2>
             <div class="flex-group">
                 <div>
-                    <label>Тип рисунка:</label><br>
+                    <label>Тип гитарной текстуры:</label><br>
                     <select id="strumType">
-                        <option value="all">Любой бой</option>
-                        <option value="44">Размер 4/4 (Эстрадный, Четверка)</option>
+                        <option value="all">Любой рисунок боя</option>
+                        <option value="44">Размер 4/4 (Эстрадный, Шестерка)</option>
                         <option value="34">Размер 3/4 (Вальсовый)</option>
+                        <option value="arpeggio">🎵 ГЕНЕРАТОР ПЕРЕБОРОВ (Арпеджио)</option>
                     </select>
                 </div>
                 <div style="padding-top: 20px;">
-                    <button onclick="generateStrum()">Сгенерировать бой</button>
+                    <button onclick="generateStrum()">Сгенерировать ритм</button>
                 </div>
             </div>
-            <div id="strumResult" style="text-align: center; font-size: 1.5rem; font-weight: 600; color: #ffb64d; margin-top: 15px; letter-spacing: 3px;"></div>
+            <div id="strumResult" style="text-align: center; font-size: 1.4rem; font-weight: 600; color: #ffb64d; margin-top: 15px; letter-spacing: 2px;"></div>
         </div>
 
-        <!-- 3. ВСТРОЕННЫЙ МЕТРОНОМ -->
+        <!-- 3. ИНТЕРАКТИВНЫЙ ТРЕНАЖЕР ПРАКТИКИ -->
         <div class="section">
-            <h2>Встроенный метроном</h2>
+            <h2>Интерактивный режим тренировки (Таймер / Разгон)</h2>
             <div class="flex-group">
                 <div>
+                    <label>Режим смены аккордов:</label><br>
+                    <select id="practiceMode" onchange="togglePracticeFields()">
+                        <option value="metronome">По долям метронома (BPM)</option>
+                        <option value="timer">По времени (Каждые X секунд)</option>
+                    </select>
+                </div>
+                <div id="bpmField">
                     <label>Темп (BPM):</label><br>
-                    <input type="number" id="bpmInput" value="120" min="40" max="250" style="width: 100px;">
+                    <input type="number" id="bpmInput" value="120" min="40" max="250" style="width: 80px;">
                 </div>
-                <div style="padding-top: 20px;">
-                    <button id="metronomeBtn" onclick="toggleMetronome()">Старт</button>
+                <div id="secondsField" style="display: none;">
+                    <label>Интервал смены (Сек):</label><br>
+                    <input type="number" id="secondsInput" value="4" min="1" max="20" style="width: 80px;">
                 </div>
+                <div style="display: flex; align-items: center; gap: 8px; padding-top: 20px;">
+                    <input type="checkbox" id="autoBpmCheck" style="width: 18px; height: 18px;">
+                    <label for="autoBpmCheck">🔥 Авто-разгон (+5 BPM каждые 4 такта)</label>
+                </div>
+                <div style="padding-top: 20px; margin-left: auto;">
+                    <button id="metronomeBtn" onclick="togglePracticeRoutine()">Старт тренировки</button>
+                </div>
+            </div>
+
+            <!-- Визуальный индикатор ритма -->
+            <div id="visualBeatIndicator" style="width: 100%; height: 8px; background: #202024; border-radius: 4px; overflow: hidden; margin-top: 15px; border: 1px solid #29292e;">
+                <div id="beatProgressBar" style="width: 0%; height: 100%; background: #00adb5; width: 0%;"></div>
             </div>
         </div>
 
-        <!-- 4. КАТАЛОГ И ПОИСК ТАБУЛАТУР -->
+        <!-- 4. ИСТОРИЯ УСПЕШНЫХ ТРЕНИРОВОК -->
         <div class="section">
-            <h2>Каталог гитарных табул</h2>
-            <div class="flex-group">
-                <input type="text" id="searchInput" class="w-100" placeholder="Введите название песни или имя исполнителя для поиска..." oninput="searchSongs()">
-            </div>
-            <div id="songsResult"></div>
-        </div>
-
-        <!-- 5. ЗАГРУЗКА АУДИО И AI РАСПОЗНАВАНИЕ -->
-        <div class="section">
-            <h2>AI Распознавание аккордов из аудиофайла (Magic Chords Mode)</h2>
-            <div class="flex-group">
-                <input type="text" id="audioArtist" placeholder="Исполнитель (например, Linkin Park)" style="flex: 1;">
-                <input type="text" id="audioTitle" placeholder="Название трека (например, Numb)" style="flex: 1;">
-            </div>
-            
-            <div style="margin-bottom: 20px;">
-                <label>Выберите трек (.mp3, .wav, .flac):</label><br><br>
-                <input type="file" id="audioFile" accept=".mp3,.wav,.flac,.m4a">
-            </div>
-
-            <button onclick="uploadAndRecognizeAudio()" style="background: #ffb64d; color: #121214; font-weight: bold;">
-                🎙️ Загрузить аудио файл и извлечь аккорды
-            </button>
-            <br><br>
-            <div id="aiStatus" style="color: #00adb5; font-weight: 600;"></div>
+            <h2>Последние сохраненные цепочки аккордов</h2>
+            <div id="historyResult" style="color: #a8a8b3; font-size: 0.95rem;">Загрузка истории...</div>
         </div>
     </div>
 
-    <!-- Подключаем внешний JavaScript файл логики -->
-    <script src="/static/app.js"></script>
+    <script src="/app.js"></script>
 </body>
 </html>
+
