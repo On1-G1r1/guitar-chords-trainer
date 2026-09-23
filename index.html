@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guitar Pro Practice Club</title>
+    <title>Guitar Practice Club</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎸 Guitar Pro Practice Club</h1>
+            <h1>🎸 Guitar Practice Club</h1>
             <p>Умный гармонический тренажер и интерактивный метроном для гитаристов</p>
         </header>
 
@@ -31,10 +31,10 @@
                     <label>Настроение:</label><br>
                     <select id="chordMood">
                         <option value="random">Хаос (Абсолютно случайно)</option>
-                        <option value="happy">😊 Веселое (Поп-цепочки)</option>
-                        <option value="sad">😢 Грустное (Лирика)</option>
-                        <option value="epic">⚔️ Эпическое / Героическое</option>
-                        <option value="jazz">🎷 Джазовое (ii-V-I)</option>
+                        <option value="happy">Веселое (Поп-цепочки)</option>
+                        <option value="sad">Грустное (Лирика)</option>
+                        <option value="epic">Эпическое</option>
+                        <option value="jazz">Джазовое (ii-V-I)</option>
                     </select>
                 </div>
                 <div>
@@ -83,7 +83,6 @@
                         <option value="all">Любой рисунок боя</option>
                         <option value="44">Размер 4/4 (Эстрадный, Шестерка)</option>
                         <option value="34">Размер 3/4 (Вальсовый)</option>
-                        <option value="arpeggio">🎵 ГЕНЕРАТОР ПЕРЕБОРОВ (Арпеджио)</option>
                     </select>
                 </div>
                 <div style="padding-top: 20px;">
@@ -93,7 +92,7 @@
             <div id="strumResult" style="text-align: center; font-size: 1.4rem; font-weight: 600; color: #ffb64d; margin-top: 15px; letter-spacing: 2px;"></div>
         </div>
 
-        <!-- 3. ИНТЕРАКТИВНЫЙ ТРЕНАЖЕР ПРАКТИКИ -->
+                <!-- 3. ИНТЕРАКТИВНЫЙ ТРЕНАЖЕР ПРАКТИКИ -->
         <div class="section">
             <h2>Интерактивный режим тренировки (Таймер / Разгон)</h2>
             <div class="flex-group">
@@ -104,18 +103,20 @@
                         <option value="timer">По времени (Каждые X секунд)</option>
                     </select>
                 </div>
-                <div id="bpmField">
-                    <label>Темп (BPM):</label><br>
-                    <input type="number" id="bpmInput" value="120" min="40" max="250" style="width: 80px;">
+                <div>
+                    <label>Начальный темп (BPM):</label><br>
+                    <input type="number" id="bpmInput" value="120" min="40" max="250" style="width: 90px;">
                 </div>
+                
                 <div id="secondsField" style="display: none;">
                     <label>Интервал смены (Сек):</label><br>
                     <input type="number" id="secondsInput" value="4" min="1" max="20" style="width: 80px;">
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; padding-top: 20px;">
-                    <input type="checkbox" id="autoBpmCheck" style="width: 18px; height: 18px;">
-                    <label for="autoBpmCheck">🔥 Авто-разгон (+5 BPM каждые 4 такта)</label>
+                <div id="timeBpmField" style="display: none;">
+                    <label>Прибавлять +5 BPM каждые (Сек):</label><br>
+                    <input type="number" id="timeBpmInput" value="10" min="2" max="120" style="width: 100px; border-color: #ffb64d;">
                 </div>
+                
                 <div style="padding-top: 20px; margin-left: auto;">
                     <button id="metronomeBtn" onclick="togglePracticeRoutine()">Старт тренировки</button>
                 </div>
@@ -123,9 +124,11 @@
 
             <!-- Визуальный индикатор ритма -->
             <div id="visualBeatIndicator" style="width: 100%; height: 8px; background: #202024; border-radius: 4px; overflow: hidden; margin-top: 15px; border: 1px solid #29292e;">
-                <div id="beatProgressBar" style="width: 0%; height: 100%; background: #00adb5; width: 0%;"></div>
+                <div id="beatProgressBar" style="width: 0%; height: 100%; background: #00adb5;"></div>
             </div>
         </div>
+
+
 
         <!-- 4. ИСТОРИЯ УСПЕШНЫХ ТРЕНИРОВОК -->
         <div class="section">

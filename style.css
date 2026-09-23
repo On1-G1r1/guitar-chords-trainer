@@ -12,6 +12,51 @@
     gap: 25px;
     text-align: center;
 }
+/* Базовое состояние карточки аккорда с мягким переходом */
+.chord-box { 
+    display: inline-block; 
+    background: #29292e; 
+    color: #00adb5; 
+    font-size: 2rem; 
+    font-weight: 700; 
+    padding: 15px 25px; 
+    margin: 10px; 
+    border-radius: 8px; 
+    border: 2px solid #00adb5; 
+    box-shadow: 0 4px 10px rgba(0, 173, 181, 0.1); 
+    transition: all 0.2s ease-out; /* Плавное затухание после вспышки */
+}
+
+/* Класс для мгновенной неоновой вспышки в такт медиаторному клику */
+/* Класс для мгновенной неоновой вспышки в такт медиаторному клику */
+.chord-box.active-chord-pulse {
+    border-color: #ffb64d !important; /* Оранжевая рамка фокуса */
+    color: #b7effc !important;        /* Яркий бирюзовый цвет текста */
+    background: #1f2d3d !important;   /* Темно-синий фон активной карточки */
+    animation: neonPulseFlash 0.15s ease-out forwards;
+}
+
+
+/* Анимация резкого удара и плавного возврата */
+@keyframes neonPulseFlash {
+    0% {
+        transform: scale(1.02);
+        box-shadow: 0 0 8px rgba(0, 173, 181, 0.4), 
+                    0 0 20px rgba(0, 173, 181, 0.6);
+    }
+    50% {
+        transform: scale(1.08); /* Максимальный толчок в момент удара */
+        box-shadow: 0 0 15px rgba(0, 173, 181, 0.8), 
+                    0 0 35px rgba(0, 173, 181, 1),
+                    0 0 50px rgba(255, 182, 77, 0.5); /* Добавляем оранжевый ореол */
+    }
+    100% {
+        transform: scale(1.05); /* Фиксация активного состояния */
+        box-shadow: 0 0 10px rgba(0, 173, 181, 0.5), 
+                    0 0 25px rgba(0, 173, 181, 0.4);
+    }
+}
+
 
 /* Стилизация строки песни */
 .lyrics-line {
